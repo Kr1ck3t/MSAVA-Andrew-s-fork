@@ -10,5 +10,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.18" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.7" PrivateAssets="all" />
   </ItemGroup>
+  <ItemGroup>
+  <ProjectReference Include="M_SAVA_BLL" />
+</ItemGroup>
+
+
 
 </Project>

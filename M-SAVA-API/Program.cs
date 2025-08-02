@@ -21,6 +21,17 @@ using Serilog.Events;
 using M_SAVA_BLL.Loggers;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowBlazor",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5075") // Blazor URL
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
 
 bool isDevelopment = builder.Environment.IsDevelopment();
 
@@ -228,6 +239,8 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseMiddleware<ExceptionCatcherMiddleware>();
+app.UseCors("AllowBlazor");
+
 
 app.UseAuthentication();
 app.UseMiddleware<RequestContextMiddleware>();

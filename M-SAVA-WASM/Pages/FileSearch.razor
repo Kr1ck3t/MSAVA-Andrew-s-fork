@@ -1,0 +1,204 @@
+@page "/filesearch"
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+
+<PageTitle>File Search</PageTitle>
+
+<h3>Search Files</h3>
+
+<div class="search-bar">
+    <label>Search by:</label>
+    <select @bind="searchField">
+        <option value="Tag">Tag</option>
+        <option value="Category">Category</option>
+        <option value="Name">Name</option>
+        <option value="Description">Description</option>
+    </select>
+
+    <input type="text" @bind="searchTerm" placeholder="Enter search term..." />
+    <button @onclick="PerformSearch">Search</button>
+</div>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else if (results is not null && results.Any())
+{
+    <h4>Results (Page @currentPage of @totalPages)</h4>
+
+    <div>
+        <label>Results per page: </label>
+        <select @bind="pageSize">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+        </select>
+    </div>
+
+    <ul>
+        @foreach (var file in PagedResults)
+        {
+            <li>
+                <strong>@file.Name</strong> - @file.Description
+            </li>
+        }
+    </ul>
+
+    <div>
+        <button @onclick="PrevPage" disabled="@(!CanGoPrev)">Previous</button>
+        Page @currentPage of @totalPages
+        <button @onclick="NextPage" disabled="@(!CanGoNext)">Next</button>
+    </div>
+}
+
+else if (hasSearched)
+{
+    <p>No results found.</p>
+}
+@using System.Text.Json.Serialization
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@using System.Net.Http.Json
+@using System.Net.Http
+@using System;
+@using System.Text.Json;
+@code {
+
+    /*private int currentPage = 1;
+    private int pageSize = 10; // default results per page
+    private int totalPages => (int)Math.Ceiling((double)results.Count / pageSize);*/
+
+    private IEnumerable<SearchFileDataDTO> paginatedResults =>
+        results.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    
+    private string searchField = "Name";  
+    private string searchTerm = string.Empty;
+    private List<SearchFileDataDTO> results = new();
+    private bool isLoading = false;
+    private bool hasSearched = false;
+
+    private async Task PerformSearch()
+    {
+        string apiUrl = searchField switch
+        {
+            "Tag" => $"http://localhost:5223/api/files/search/byTag/data?tag={Uri.EscapeDataString(searchTerm)}",
+            "Category" => $"http://localhost:5223/api/files/search/byCategory/data?category={Uri.EscapeDataString(searchTerm)}",
+            "Name" => $"http://localhost:5223/api/files/search/byName/data?name={Uri.EscapeDataString(searchTerm)}",
+            "Description" => $"http://localhost:5223/api/files/search/byDescription/data?description={Uri.EscapeDataString(searchTerm)}",
+            _ => ""
+        };
+
+        if (string.IsNullOrEmpty(apiUrl))
+            return;
+
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
+
+            string token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NTZjMmU2OC1lMWZmLTRjMTgtYjYxZS1lYzM4ODM2ZjYwZjEiLCJ1bmlxdWVfbmFtZSI6IkFkbWluIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjpbIkFkbWluIiwiV2hpdGVsaXN0ZWQiXSwiaW52aXRlQ29kZSI6IiIsImFjY2Vzc0dyb3VwcyI6Ijk5MTRhMzI1LTJkZGItNGIwMi04ZmZhLWUzNmQ4ODQ3MTVjMSxiYzI0OGVmNS04NDI5LTRlNGQtYWQ2Yy1hYTk2Y2UyNWVhMDAiLCJuYmYiOjE3NTQxNzI5NzUsImV4cCI6MTc1NDE4MDE3NSwiaXNzIjoiTVNBVkEiLCJhdWQiOiJNU0FWQSJ9.AbFQSjBTF9kVBGJ_B6xrV5V1bD5PoB39O0xH9qsbFnY";
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            Console.WriteLine($"Sending request with token: {token}");
+            Console.WriteLine($"Request URL: {apiUrl}");
+
+            var response = await Http.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                results = JsonSerializer.Deserialize<List<SearchFileDataDTO>>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }) ?? new();
+            }
+            else
+            {
+                Console.WriteLine($"❌ Error: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Exception: {ex.Message}");
+        }
+    }
+
+    private int _pageSize = 10;
+    private int pageSize
+    {
+        get => _pageSize;
+        set
+        {
+            _pageSize = value;
+            currentPage = 1; // reset when page size changes
+        }
+    }
+
+    private int currentPage = 1;
+
+    private IEnumerable<SearchFileDataDTO> PagedResults =>
+        results.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    private int totalPages => (int)Math.Ceiling((double)results.Count / pageSize);
+
+    private bool CanGoPrev => currentPage > 1;
+    private bool CanGoNext => currentPage < totalPages;
+
+    private void NextPage()
+    {
+        if (CanGoNext)
+            currentPage++;
+    }
+
+    private void PrevPage()
+    {
+        if (CanGoPrev)
+            currentPage--;
+    }
+
+
+
+
+
+
+    public class SearchFileDataDTO
+{
+    [JsonPropertyName("dataId")]
+    public Guid DataId { get; set; }
+
+    [JsonPropertyName("refId")]
+    public Guid RefId { get; set; }
+
+    [JsonPropertyName("filePath")]
+    public string FilePath { get; set; } = string.Empty;
+
+    public string? Name { get; set; }
+    public string? Description { get; set; }
+
+    [JsonPropertyName("mimeType")]
+    public string MimeType { get; set; } = string.Empty;
+
+    [JsonPropertyName("fileExtension")]
+    public string FileExtension { get; set; } = string.Empty;
+
+    public string[]? Tags { get; set; }
+    public string[]? Categories { get; set; }
+
+    public ulong SizeInBytes { get; set; }
+    public string? Checksum { get; set; }
+
+    public JsonDocument? Metadata { get; set; }
+    public bool PublicViewing { get; set; }
+    public uint DownloadCount { get; set; }
+
+    public DateTime SavedAt { get; set; }
+    public DateTime LastModifiedAt { get; set; }
+
+    public Guid OwnerId { get; set; }
+    public Guid LastModifiedById { get; set; }
+}
+
+}
