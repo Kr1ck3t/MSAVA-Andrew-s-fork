@@ -1,21 +1,17 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace M_SAVA_DAL.Models
+namespace M_SAVA_Core.Models
 {
-    public class AccessCodeDB : IIdentifiableDB
+    public class AccessCodeDTO
     {
         public Guid Id { get; set; }
         public required Guid OwnerId { get; set; }
-        public required UserDB Owner { get; set; } = null!;
         public required DateTime CreatedAt { get; set; }
         public required DateTime ExpiresAt { get; set; }
         public required int MaxUses { get; set; }
         public required Guid AccessGroupId { get; set; }
-        public required AccessGroupDB AccessGroup { get; set; } = null!;
-        public int UsageCount { get; set; } = 0;
+        public required AccessGroupDTO AccessGroup { get; set; }
+        public int UsageCount { get; set; }
     }
 }

@@ -14,6 +14,6 @@ namespace M_SAVA_DAL.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public required string Name { get; set; }
         public ICollection<UserDB> Users { get; set; } = new List<UserDB>();
-        public IEnumerable<AccessGroupDB>? SubGroups { get; set; }
+        public List<AccessGroupDB>? SubGroups { get; set; }
     }
 }
